@@ -9,6 +9,13 @@ module.exports = {
       gas: 8000000,
       gasPrice: 1000000000, // web3.eth.gasPrice
     },
+    develop: {
+      host: 'localhost',
+      port: 9545,
+      network_id: '*',
+      accounts: 1500,
+      defaultEtherBalance: 5000000
+    },
     coverage: {
       host: 'localhost',
       port: 8555,
@@ -30,7 +37,7 @@ module.exports = {
   },
   mocha: { // https://github.com/cgewecke/eth-gas-reporter
     reporter: 'eth-gas-reporter',
-    reporterOptions : {
+    reporterOptions: {
       currency: 'USD',
       gasPrice: 10,
       onlyCalledMethods: true,

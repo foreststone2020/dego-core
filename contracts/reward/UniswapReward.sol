@@ -10,7 +10,7 @@ import "../interface/IPlayerBook.sol";
 import "../library/LPTokenWrapper.sol";
 import "../library/SafeERC20.sol";
 
-contract UniswapReward is LPTokenWrapper{
+contract UniswapReward is LPTokenWrapper {
     using SafeERC20 for IERC20;
 
     IERC20 public _dego = IERC20(0x88EF27e69108B2633F8E1C184CC37940A075cC02);
@@ -20,7 +20,7 @@ contract UniswapReward is LPTokenWrapper{
     uint256 public constant DURATION = 7 days;
 
     uint256 public _initReward = 2100000 * 1e18;
-    uint256 public _startTime =  now + 365 days;
+    uint256 public _startTime = now + 365 days;
     uint256 public _periodFinish = 0;
     uint256 public _rewardRate = 0;
     uint256 public _lastUpdateTime;
@@ -42,7 +42,6 @@ contract UniswapReward is LPTokenWrapper{
     event Withdrawn(address indexed user, uint256 amount);
     event RewardPaid(address indexed user, uint256 reward);
 
-
     modifier updateReward(address account) {
         _rewardPerTokenStored = rewardPerToken();
         _lastUpdateTime = lastTimeRewardApplicable();
@@ -54,22 +53,34 @@ contract UniswapReward is LPTokenWrapper{
     }
 
     /* Fee collection for any other token */
-    function seize(IERC20 token, uint256 amount) external onlyGovernance{
+    function seize(IERC20 token, uint256 amount) external onlyGovernance {
         require(token != _dego, "reward");
         require(token != _lpToken, "stake");
         token.safeTransfer(_governance, amount);
     }
 
-    function setTeamRewardRate( uint256 teamRewardRate ) public onlyGovernance{
+    function setTeamRewardRate(uint256 teamRewardRate) public onlyGovernance {
         _teamRewardRate = teamRewardRate;
     }
 
-    function setPoolRewardRate( uint256  poolRewardRate ) public onlyGovernance{
+    function setPoolRewardRate(uint256 poolRewardRate) public onlyGovernance {
         _poolRewardRate = poolRewardRate;
     }
 
-    function setWithDrawPunishTime( uint256  punishTime ) public onlyGovernance{
+    function setWithDrawPunishTime(uint256 punishTime) public onlyGovernance {
         _punishTime = punishTime;
+    }
+
+    function setDego(address degoAddress) public onlyGovernance {
+        _dego = IERC20(degoAddress);
+    }
+
+    function setLpToken(address lpTokenAddress) public onlyGovernance {
+        _lpToken = IERC20(lpTokenAddress);
+    }
+
+    function setPlayBook(address playBookAddress) public onlyGovernance {
+        _playerBook = playBookAddress;
     }
 
     function lastTimeRewardApplicable() public view returns (uint256) {
@@ -134,13 +145,16 @@ contract UniswapReward is LPTokenWrapper{
         if (reward > 0) {
             _rewards[msg.sender] = 0;
 
-            uint256 fee = IPlayerBook(_playerBook).settleReward(msg.sender, reward);
-            if(fee > 0){
+            uint256 fee = IPlayerBook(_playerBook).settleReward(
+                msg.sender,
+                reward
+            );
+            if (fee > 0) {
                 _dego.safeTransfer(_playerBook, fee);
             }
-            
+
             uint256 teamReward = reward.mul(_teamRewardRate).div(_baseRate);
-            if(teamReward>0){
+            if (teamReward > 0) {
                 _dego.safeTransfer(_teamWallet, teamReward);
             }
             uint256 leftReward = reward.sub(fee).sub(teamReward);
@@ -148,18 +162,18 @@ contract UniswapReward is LPTokenWrapper{
 
             //withdraw time check
 
-            if(now  < (_lastStakedTime[msg.sender] + _punishTime) ){
+            if (now < (_lastStakedTime[msg.sender] + _punishTime)) {
                 poolReward = leftReward.mul(_poolRewardRate).div(_baseRate);
             }
-            if(poolReward>0){
+            if (poolReward > 0) {
                 _dego.safeTransfer(_rewardPool, poolReward);
                 leftReward = leftReward.sub(poolReward);
             }
 
-            if(leftReward>0){
-                _dego.safeTransfer(msg.sender, leftReward );
+            if (leftReward > 0) {
+                _dego.safeTransfer(msg.sender, leftReward);
             }
-      
+
             emit RewardPaid(msg.sender, leftReward);
         }
     }
@@ -176,7 +190,7 @@ contract UniswapReward is LPTokenWrapper{
         }
         _;
     }
-    
+
     modifier checkStart() {
         require(block.timestamp > _startTime, "not start");
         _;
@@ -190,10 +204,10 @@ contract UniswapReward is LPTokenWrapper{
     {
         require(_hasStart == false, "has started");
         _hasStart = true;
-        
+
         _startTime = startTime;
 
-        _rewardRate = _initReward.div(DURATION); 
+        _rewardRate = _initReward.div(DURATION);
         _dego.mint(address(this), _initReward);
 
         _lastUpdateTime = _startTime;
